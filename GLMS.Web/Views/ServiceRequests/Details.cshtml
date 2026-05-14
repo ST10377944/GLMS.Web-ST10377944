@@ -1,0 +1,50 @@
+﻿@model GLMS.Web.Models.ServiceRequest
+@using GLMS.Web.Models
+
+@{
+    ViewData["Title"] = "Service Request Details";
+}
+
+<h1>Service Request Details</h1>
+
+<div class="card">
+    <div class="card-header">
+        <strong>Request ID: @Model.ServiceRequestId</strong>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Contract ID</dt>
+            <dd class="col-sm-9">@Model.ContractId</dd>
+
+            <dt class="col-sm-3">Client</dt>
+            <dd class="col-sm-9">@Model.Contract?.Client?.Name</dd>
+
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@Model.Description</dd>
+
+            <dt class="col-sm-3">Amount (USD)</dt>
+            <dd class="col-sm-9">$ @Model.AmountUSD.ToString("N2")</dd>
+
+            <dt class="col-sm-3">Exchange Rate</dt>
+            <dd class="col-sm-9">@Model.ExchangeRateUsed.ToString("F2")</dd>
+
+            <dt class="col-sm-3">Amount (ZAR)</dt>
+            <dd class="col-sm-9"><strong>R @Model.AmountZAR.ToString("N2")</strong></dd>
+
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                <span class="badge bg-@(Model.Status == RequestStatus.Pending ? "warning" :
+                                                                                     Model.Status == RequestStatus.Approved ? "success" :
+                                                                                     Model.Status == RequestStatus.Completed ? "info" : "secondary")">
+                    @Model.Status
+                </span>
+            </dd>
+
+            <dt class="col-sm-3">Created At</dt>
+            <dd class="col-sm-9">@Model.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd>
+        </dl>
+    </div>
+    <div class="card-footer">
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>

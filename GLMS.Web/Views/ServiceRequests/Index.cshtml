@@ -1,0 +1,69 @@
+﻿@model IEnumerable<GLMS.Web.Models.ServiceRequest>
+@using GLMS.Web.Models
+
+@{
+    ViewData["Title"] = "Service Requests";
+}
+
+<h1>Service Requests</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">+ New Service Request</a>
+</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Client</th>
+            <th>Contract</th>
+            <th>Description</th>
+            <th>Amount (USD)</th>
+            <th>Exchange Rate</th>
+            <th>Amount (ZAR)</th>
+            <th>Status</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.ServiceRequestId</td>
+                <td>@item.Contract?.Client?.Name</td>
+                <td>@item.ContractId</td>
+                <td>@item.Description</td>
+                <td>$ @item.AmountUSD.ToString("N2")</td>
+                <td>@item.ExchangeRateUsed.ToString("F2")</td>
+                <td><strong>R @item.AmountZAR.ToString("N2")</strong></td>
+                <td>
+                    <span class="badge bg-@(item.Status == RequestStatus.Pending ? "warning" :
+                                                                                                 item.Status == RequestStatus.Approved ? "success" :
+                                                                                                 item.Status == RequestStatus.Completed ? "info" : "secondary")">
+                    @item.Status
+                </span>
+            </td>
+            <td>@item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+            <td>
+                <a asp-action="Details" asp-route-id="@item.ServiceRequestId" class="btn btn-sm btn-outline-info">Details</a>
+            </td>
+        </tr>
+                }
+    </tbody>
+</table>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center">
+        <p>No service requests found. Click "New Service Request" to create one.</p>
+    </div>
+}

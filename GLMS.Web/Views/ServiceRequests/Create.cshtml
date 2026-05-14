@@ -1,0 +1,141 @@
+﻿@model GLMS.Web.Models.ServiceRequest
+@using GLMS.Web.Models
+
+@{
+    ViewData["Title"] = "Create Service Request";
+}
+
+<h1>Create Service Request</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="ContractId" class="form-label">Active Contract</label>
+                <select asp-for="ContractId" class="form-select" required>
+                    <option value="">-- Select an Active Contract --</option>
+                    @if (ViewBag.Contracts != null)
+                    {
+                        foreach (var contract in ViewBag.Contracts)
+                        {
+                            <option value="@contract.ContractId">
+                                @contract.Client.Name - @contract.ServiceLevel (ID: @contract.ContractId)
+                            </option>
+                        }
+                    }
+                </select>
+                <span asp-validation-for="ContractId" class="text-danger"></span>
+                @if (ViewBag.Contracts != null && ViewBag.Contracts.Count == 0)
+                {
+                    <div class="alert alert-warning mt-2">
+                        No active contracts found. Please <a href="/Contracts/Create">create an active contract</a> first.
+                    </div>
+                }
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="AmountUSD" class="form-label">Amount (USD)</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input asp-for="AmountUSD" type="number" step="0.01" class="form-control" id="amountUSD" required />
+                </div>
+                <span asp-validation-for="AmountUSD" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Current Exchange Rate (USD to ZAR)</label>
+                <input type="text" id="exchangeRate" class="form-control" readonly value="@ViewBag.CurrentRate" />
+                <small class="text-muted">Rate updates hourly from external API</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Amount (ZAR) - Auto Calculated</label>
+                <div class="input-group">
+                    <span class="input-group-text">R</span>
+                    <input type="text" id="amountZAR" class="form-control" readonly />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create Service Request</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <strong>How it works</strong>
+            </div>
+            <div class="card-body">
+                <p>1. Only <strong>ACTIVE</strong> contracts appear in the dropdown.</p>
+                <p>2. Exchange rate is fetched live from <strong>ExchangeRate-API</strong>.</p>
+                <p>3. ZAR amount calculates automatically as you type USD.</p>
+                <p>4. Service requests are linked to the selected contract.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Get DOM elements
+        const usdInput = document.getElementById('amountUSD');
+        const rateInput = document.getElementById('exchangeRate');
+        const zarOutput = document.getElementById('amountZAR');
+
+        // Function to calculate ZAR amount
+        function calculateZAR() {
+            const usd = parseFloat(usdInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
+            const zar = usd * rate;
+            zarOutput.value = zar.toFixed(2);
+
+            // Add visual feedback
+            if (usd > 0) {
+                zarOutput.style.backgroundColor = '#e8f5e9';
+            } else {
+                zarOutput.style.backgroundColor = '';
+            }
+        }
+
+        // Function to refresh exchange rate from API
+        async function refreshExchangeRate() {
+            try {
+                const response = await fetch('/ServiceRequests/GetExchangeRate');
+                const data = await response.json();
+                if (data.rate) {
+                    rateInput.value = data.rate.toFixed(2);
+                    calculateZAR();
+                    console.log('Exchange rate updated:', data.rate);
+                }
+            } catch (error) {
+                console.error('Failed to fetch exchange rate:', error);
+                // Keep using existing rate - no action needed
+            }
+        }
+
+        // Event listeners
+        usdInput.addEventListener('input', calculateZAR);
+
+        // Initial calculation
+        calculateZAR();
+
+        // Refresh rate every 10 seconds (for demo) - normally every hour
+        setInterval(refreshExchangeRate, 600000);
+
+        // Refresh rate immediately on page load
+        refreshExchangeRate();
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
