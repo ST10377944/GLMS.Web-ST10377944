@@ -1,4 +1,5 @@
 ﻿@{
+    var sid = ViewBag.SessionId as string ?? Context.Request.Query["sid"].ToString();
     ViewData["Title"] = "Dashboard";
 }
 
@@ -11,32 +12,6 @@
         margin-bottom: 40px;
     }
 
-    .stat-card {
-        background: white;
-        border-radius: 15px;
-        padding: 25px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-        transition: transform 0.3s ease;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .stat-number {
-        font-size: 42px;
-        font-weight: bold;
-        color: #667eea;
-    }
-
-    .stat-label {
-        color: #666;
-        font-size: 14px;
-        margin-top: 10px;
-    }
-
     .feature-box {
         text-align: center;
         padding: 30px;
@@ -46,10 +21,10 @@
         transition: all 0.3s ease;
     }
 
-    .feature-box:hover {
-        background: #e9ecef;
-        transform: scale(1.02);
-    }
+        .feature-box:hover {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
 
     .feature-icon {
         font-size: 48px;
@@ -64,61 +39,39 @@
         font-weight: bold;
         border-radius: 50px;
         transition: all 0.3s ease;
+        color: white !important;
+        text-decoration: none;
     }
 
-    .btn-start:hover {
-        transform: scale(1.05);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
+        .btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            color: white !important;
+        }
 
     .quick-action {
         cursor: pointer;
         transition: all 0.2s ease;
+        text-decoration: none;
+        color: inherit;
+        display: block;
     }
 
-    .quick-action:hover {
-        background: #667eea10;
-        border-left: 4px solid #667eea;
-    }
+        .quick-action:hover {
+            background: #667eea10;
+            border-left: 4px solid #667eea;
+            text-decoration: none;
+            color: inherit;
+        }
 </style>
 
 <!-- Hero Section -->
 <div class="hero-section text-center">
     <h1 class="display-4 fw-bold">Global Logistics Management System</h1>
     <p class="lead mt-3">Centralised contract management | Automated service requests | Real-time currency conversion</p>
-    <a href="/Contracts" class="btn btn-start btn-lg text-white mt-4">
+    <a href="/Contracts/Index?sid=@sid" class="btn-start btn-lg mt-4">
         🚀 Get Started
     </a>
-</div>
-
-<!-- Statistics Section -->
-<div class="container">
-    <div class="row stats-row" id="statsContainer">
-        <div class="col-md-3 col-sm-6">
-            <div class="stat-card">
-                <div class="stat-number" id="activeContractsCount">-</div>
-                <div class="stat-label">Active Contracts</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="stat-card">
-                <div class="stat-number" id="totalRequestsCount">-</div>
-                <div class="stat-label">Service Requests</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="stat-card">
-                <div class="stat-number" id="pendingRequestsCount">-</div>
-                <div class="stat-label">Pending Requests</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="stat-card">
-                <div class="stat-number" id="exchangeRate">-</div>
-                <div class="stat-label">USD to ZAR Rate</div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Quick Actions Section -->
@@ -131,7 +84,7 @@
     </div>
     <div class="row">
         <div class="col-md-4 mb-3">
-            <a href="/Contracts/Create" style="text-decoration: none;">
+            <a href="/Contracts/Create?sid=@sid" style="text-decoration: none;">
                 <div class="quick-action p-3 border rounded">
                     <div class="d-flex align-items-center">
                         <div class="feature-icon me-3">📄</div>
@@ -144,7 +97,7 @@
             </a>
         </div>
         <div class="col-md-4 mb-3">
-            <a href="/ServiceRequests/Create" style="text-decoration: none;">
+            <a href="/ServiceRequests/Create?sid=@sid" style="text-decoration: none;">
                 <div class="quick-action p-3 border rounded">
                     <div class="d-flex align-items-center">
                         <div class="feature-icon me-3">🚚</div>
@@ -157,7 +110,7 @@
             </a>
         </div>
         <div class="col-md-4 mb-3">
-            <a href="/Contracts" style="text-decoration: none;">
+            <a href="/Contracts/Index?sid=@sid" style="text-decoration: none;">
                 <div class="quick-action p-3 border rounded">
                     <div class="d-flex align-items-center">
                         <div class="feature-icon me-3">📋</div>
@@ -225,49 +178,3 @@
         </div>
     </div>
 </div>
-
-<!-- JavaScript to load live data -->
-<script>
-    // Function to fetch and display statistics
-    async function loadDashboardStats() {
-        try {
-            // Fetch active contracts count
-            const contractsResponse = await fetch('/api/Statistics/ActiveContractsCount');
-            const activeContracts = await contractsResponse.json();
-            document.getElementById('activeContractsCount').innerText = activeContracts;
-
-            // Fetch service requests stats
-            const requestsResponse = await fetch('/api/Statistics/ServiceRequestsStats');
-            const stats = await requestsResponse.json();
-            document.getElementById('totalRequestsCount').innerText = stats.total;
-            document.getElementById('pendingRequestsCount').innerText = stats.pending;
-
-            // Fetch current exchange rate
-            const rateResponse = await fetch('/ServiceRequests/GetExchangeRate');
-            const rateData = await rateResponse.json();
-            document.getElementById('exchangeRate').innerText = rateData.rate.toFixed(2);
-        } catch (error) {
-            console.log('Stats loading failed (database may be empty):', error);
-            // Fallback values
-            document.getElementById('activeContractsCount').innerText = '0';
-            document.getElementById('totalRequestsCount').innerText = '0';
-            document.getElementById('pendingRequestsCount').innerText = '0';
-            document.getElementById('exchangeRate').innerText = '18.50';
-        }
-    }
-
-    // Load stats when page loads
-    loadDashboardStats();
-
-    // Refresh exchange rate every 60 seconds
-    setInterval(() => {
-        fetch('/ServiceRequests/GetExchangeRate')
-            .then(res => res.json())
-            .then(data => {
-                if (data.rate) {
-                    document.getElementById('exchangeRate').innerText = data.rate.toFixed(2);
-                }
-            })
-            .catch(e => console.log('Rate refresh failed'));
-    }, 60000);
-</script>

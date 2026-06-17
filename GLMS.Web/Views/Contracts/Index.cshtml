@@ -1,61 +1,88 @@
-﻿@model IEnumerable<GLMS.Web.Models.Contract>
-@using GLMS.Web.Models
+﻿@model List<GLMS.Web.Services.Contract>
+@{
+    var sid = Context.Request.Query["sid"].ToString();
+    ViewData["Title"] = "Contracts";
+}
 
-<h1>Contract Management Hub</h1>
-
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Contract</a>
-</p>
-
-<div class="card mb-4">
-    <div class="card-header">Filter Contracts</div>
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Status</label>
-                <select name="status" class="form-select">
-                    <option value="">All</option>
-                    <option value="Draft">Draft</option>
-                    <option value="Active">Active</option>
-                    <option value="Expired">Expired</option>
-                    <option value="OnHold">On Hold</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Start Date From</label>
-                <input type="date" name="startDateFrom" class="form-control" value="@ViewBag.StartDateFrom" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Start Date To</label>
-                <input type="date" name="startDateTo" class="form-control" value="@ViewBag.StartDateTo" />
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-secondary">Filter</button>
-                <a asp-action="Index" class="btn btn-link">Clear</a>
-            </div>
-        </form>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Contract Management System</h1>
+        <div>
+            <a asp-action="Create" asp-route-sid="@sid" class="btn btn-primary">+ Create New Contract</a>
+            <a asp-controller="ServiceRequests" asp-action="Index" asp-route-sid="@sid" class="btn btn-info ms-2">Service Requests</a>
+            <a asp-action="Logout" asp-route-sid="@sid" class="btn btn-danger ms-2">Logout</a>
+        </div>
     </div>
-</div>
 
-<table class="table table-striped">
-    <thead>
-        <tr><th>ID</th><th>Client</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Service Level</th><th>PDF</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.ContractId</td>
-                <td>@item.Client?.Name</td>
-                <td>@item.StartDate.ToShortDateString()</td>
-                <td>@item.EndDate.ToShortDateString()</td>
-                <td><span class="badge bg-@(item.Status == ContractStatus.Active ? "success" : "warning")">@item.Status</span></td>
-                <td>@item.ServiceLevel</td>
-                <td>@if(!string.IsNullOrEmpty(item.SignedAgreementPath)){
-                <a asp-action="DownloadPdf" asp-route-id="@item.ContractId">Download</a>
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            No contracts found. Click "Create New Contract" to add one.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var contract in Model)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title">@contract.ClientName</h5>
+                                <span class="badge @(contract.Status == "Approved" ? "bg-success" : (contract.Status == "Declined" ? "bg-danger" : "bg-warning"))">
+                                    @contract.Status
+                                </span>
+                            </div>
+                            <p class="card-text text-muted">@contract.Description</p>
+                            <hr />
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Amount:</strong><br />
+                                    @contract.Amount.ToString("C")
+                                </div>
+                                <div class="col-6">
+                                    <strong>Created:</strong><br />
+                                    @contract.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")
+                                </div>
+                            </div>
+                            <hr />
+                            <div class="d-flex gap-2 flex-wrap">
+                                @if (contract.Status == "Pending")
+                                {
+                                    <form asp-action="Approve" method="post" style="display:inline">
+                                        <input type="hidden" name="id" value="@contract.Id" />
+                                        <input type="hidden" name="sid" value="@sid" />
+                                        <button type="submit" class="btn btn-success btn-sm">✓ Approve</button>
+                                    </form>
+                                    <form asp-action="Decline" method="post" style="display:inline">
+                                        <input type="hidden" name="id" value="@contract.Id" />
+                                        <input type="hidden" name="sid" value="@sid" />
+                                        <button type="submit" class="btn btn-danger btn-sm">✗ Decline</button>
+                                    </form>
+                                }
+                                @if (contract.Status == "Approved")
+                                {
+                                    <a asp-controller="ServiceRequests"
+                                       asp-action="Create"
+                                       asp-route-sid="@sid"
+                                       asp-route-contractId="@contract.Id"
+                                       class="btn btn-info btn-sm">
+                                        📝 Create Service Request
+                                    </a>
+                                }
+                                <a asp-controller="ServiceRequests"
+                                   asp-action="Details"
+                                   asp-route-id="@contract.Id"
+                                   asp-route-sid="@sid"
+                                   class="btn btn-outline-secondary btn-sm">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             }
-</td>
-        </tr>
-                }
-    </tbody>
-</table>
+        </div>
+    }
+</div>

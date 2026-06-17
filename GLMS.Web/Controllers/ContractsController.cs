@@ -1,92 +1,167 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using GLMS.Web.Data;
-using GLMS.Web.Models;
 using GLMS.Web.Services;
 
-namespace GLMS.Web.Controllers;
-
-public class ContractsController : Controller
+namespace GLMS.Web.Controllers
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IFileValidationService _fileValidationService;
-    private readonly IWebHostEnvironment _webHostEnvironment;
-
-    public ContractsController(
-        ApplicationDbContext context,
-        IFileValidationService fileValidationService,
-        IWebHostEnvironment webHostEnvironment)
+    public class ContractsController : Controller
     {
-        _context = context;
-        _fileValidationService = fileValidationService;
-        _webHostEnvironment = webHostEnvironment;
-    }
+        private readonly ContractApiServices _apiService;
+        private readonly TokenStorageService _tokenStorage;
 
-    public async Task<IActionResult> Index(string? status, DateTime? startDateFrom, DateTime? startDateTo)
-    {
-        var query = _context.Contracts.Include(c => c.Client).AsQueryable();
-
-        if (startDateFrom.HasValue)
-            query = query.Where(c => c.StartDate >= startDateFrom.Value);
-        if (startDateTo.HasValue)
-            query = query.Where(c => c.StartDate <= startDateTo.Value);
-        if (!string.IsNullOrEmpty(status) && Enum.TryParse<ContractStatus>(status, true, out var statusEnum))
-            query = query.Where(c => c.Status == statusEnum);
-
-        ViewBag.CurrentStatus = status;
-        ViewBag.StartDateFrom = startDateFrom?.ToString("yyyy-MM-dd");
-        ViewBag.StartDateTo = startDateTo?.ToString("yyyy-MM-dd");
-
-        return View(await query.ToListAsync());
-    }
-
-    public IActionResult Create()
-    {
-        ViewData["Clients"] = _context.Clients.ToList();
-        return View();
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Contract contract, IFormFile? signedAgreement)
-    {
-        if (signedAgreement != null)
+        public ContractsController(ContractApiServices apiService, TokenStorageService tokenStorage)
         {
-            var validation = _fileValidationService.ValidatePdfFile(signedAgreement);
-            if (!validation.IsValid)
-                ModelState.AddModelError("signedAgreement", validation.ErrorMessage);
-            else
+            _apiService = apiService;
+            _tokenStorage = tokenStorage;
+        }
+
+        // GET: Contracts
+        public async Task<IActionResult> Index(string sid)
+        {
+            System.Diagnostics.Debug.WriteLine("=== CONTRACTS INDEX HIT ===");
+            System.Diagnostics.Debug.WriteLine($"Session ID received: {sid ?? "NULL"}");
+
+            if (string.IsNullOrEmpty(sid))
             {
-                var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "contracts");
-                Directory.CreateDirectory(uploadsFolder);
-                var uniqueFileName = $"{Guid.NewGuid()}_{signedAgreement.FileName}";
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                    await signedAgreement.CopyToAsync(stream);
-                contract.SignedAgreementPath = $"/uploads/contracts/{uniqueFileName}";
+                System.Diagnostics.Debug.WriteLine("No session ID, redirecting to login");
+                return RedirectToAction("Index", "Login");
             }
+
+            // Get token from server-side storage
+            var token = _tokenStorage.GetToken(sid);
+
+            if (string.IsNullOrEmpty(token))
+            {
+                System.Diagnostics.Debug.WriteLine("No token found for this session ID, redirecting to login");
+                return RedirectToAction("Index", "Login");
+            }
+
+            // Set the token for API calls
+            _apiService.SetAuthToken(token);
+
+            // Fetch contracts from API
+            var contracts = await _apiService.GetContractsAsync();
+            System.Diagnostics.Debug.WriteLine($"Got {contracts?.Count ?? 0} contracts");
+
+            // Pass session ID to view for subsequent requests
+            ViewBag.SessionId = sid;
+
+            return View(contracts);
         }
 
-        if (ModelState.IsValid)
+        // GET: Contracts/Create
+        public IActionResult Create(string sid)
         {
-            _context.Add(contract);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            if (string.IsNullOrEmpty(sid))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var token = _tokenStorage.GetToken(sid);
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            _apiService.SetAuthToken(token);
+            ViewBag.SessionId = sid;
+            return View();
         }
 
-        ViewData["Clients"] = _context.Clients.ToList();
-        return View(contract);
-    }
+        // POST: Contracts/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Contract contract, string sid)
+        {
+            if (string.IsNullOrEmpty(sid))
+            {
+                return RedirectToAction("Index", "Login");
+            }
 
-    public async Task<IActionResult> DownloadPdf(int id)
-    {
-        var contract = await _context.Contracts.FindAsync(id);
-        if (contract?.SignedAgreementPath == null) return NotFound();
+            var token = _tokenStorage.GetToken(sid);
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
 
-        var filePath = Path.Combine(_webHostEnvironment.WebRootPath, contract.SignedAgreementPath.TrimStart('/'));
-        if (!System.IO.File.Exists(filePath)) return NotFound();
+            _apiService.SetAuthToken(token);
 
-        var bytes = await System.IO.File.ReadAllBytesAsync(filePath);
-        return File(bytes, "application/pdf", Path.GetFileName(filePath));
+            if (ModelState.IsValid)
+            {
+                await _apiService.CreateContractAsync(contract);
+                return RedirectToAction(nameof(Index), new { sid = sid });
+            }
+            ViewBag.SessionId = sid;
+            return View(contract);
+        }
+
+        // POST: Contracts/Approve/5
+        [HttpPost]
+        public async Task<IActionResult> Approve(int id, string sid)
+        {
+            if (string.IsNullOrEmpty(sid))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var token = _tokenStorage.GetToken(sid);
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            _apiService.SetAuthToken(token);
+
+            await _apiService.UpdateContractStatusAsync(id, "Approved");
+            return RedirectToAction(nameof(Index), new { sid = sid });
+        }
+
+        // POST: Contracts/Decline/5
+        [HttpPost]
+        public async Task<IActionResult> Decline(int id, string sid)
+        {
+            if (string.IsNullOrEmpty(sid))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var token = _tokenStorage.GetToken(sid);
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            _apiService.SetAuthToken(token);
+
+            await _apiService.UpdateContractStatusAsync(id, "Declined");
+            return RedirectToAction(nameof(Index), new { sid = sid });
+        }
+
+        // GET: Contracts/CreateServiceRequestFromContract
+        // This redirects to ServiceRequests Create with the contract pre-selected
+        public IActionResult CreateServiceRequest(int contractId, string sid)
+        {
+            if (string.IsNullOrEmpty(sid))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var token = _tokenStorage.GetToken(sid);
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            // Redirect to ServiceRequests Create with contractId parameter
+            return RedirectToAction("Create", "ServiceRequests", new { sid = sid, contractId = contractId });
+        }
+
+        public IActionResult Logout(string sid)
+        {
+            if (!string.IsNullOrEmpty(sid))
+            {
+                _tokenStorage.RemoveToken(sid);
+            }
+            return RedirectToAction("Index", "Login");
+        }
     }
 }

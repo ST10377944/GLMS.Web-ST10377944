@@ -1,11 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36915.13 d17.14
+VisualStudioVersion = 17.14.36915.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLMS.Web", "GLMS.Web\GLMS.Web.csproj", "{1D6E324F-50F3-4B34-9B9E-0D1EC066EAD6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLMS.Tests", "GLMS.Tests\GLMS.Tests.csproj", "{670B231F-C2EA-475E-972A-C03CCDC381FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContractManagement.API", "ContractManagement.API\ContractManagement.API.csproj", "{E3A532CF-2579-4D21-9E20-5BF6DF0ACE78}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContractManagement.Tests", "ContractManagement.Tests\ContractManagement.Tests.csproj", "{0A99E0D2-0FC6-4AD8-86A9-BD645BCD044E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{670B231F-C2EA-475E-972A-C03CCDC381FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{670B231F-C2EA-475E-972A-C03CCDC381FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{670B231F-C2EA-475E-972A-C03CCDC381FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3A532CF-2579-4D21-9E20-5BF6DF0ACE78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3A532CF-2579-4D21-9E20-5BF6DF0ACE78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3A532CF-2579-4D21-9E20-5BF6DF0ACE78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3A532CF-2579-4D21-9E20-5BF6DF0ACE78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A99E0D2-0FC6-4AD8-86A9-BD645BCD044E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A99E0D2-0FC6-4AD8-86A9-BD645BCD044E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A99E0D2-0FC6-4AD8-86A9-BD645BCD044E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A99E0D2-0FC6-4AD8-86A9-BD645BCD044E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

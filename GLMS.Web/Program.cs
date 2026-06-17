@@ -1,17 +1,20 @@
-using Microsoft.EntityFrameworkCore;
-using GLMS.Web.Data;
 using GLMS.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// THIS IS CRITICAL - Register TokenStorageService as Singleton
+builder.Services.AddSingleton<TokenStorageService>();
 
-builder.Services.AddScoped<ICurrencyService, CurrencyService>();
-builder.Services.AddScoped<IFileValidationService, FileValidationService>();
-builder.Services.AddHttpClient<ICurrencyService, CurrencyService>();
+builder.Services.AddHttpClient<ContractApiServices>(client =>
+{
+    var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7208";
+    client.BaseAddress = new Uri(apiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
 
 var app = builder.Build();
 
@@ -24,6 +27,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseSession();
 app.UseAuthorization();
 
 app.MapControllerRoute(
